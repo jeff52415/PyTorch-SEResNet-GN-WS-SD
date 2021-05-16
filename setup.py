@@ -6,10 +6,10 @@ DESCRIPTION = 'PyTorch implementation of SE-ResNet with Group Normalization, Wei
 URL = 'https://github.com/jeff52415/PyTorch-SEResNet-GN-WS-SD'
 
 
-
 def list_reqs(fname='requirements.txt'):
     with open(fname) as fd:
         return fd.read().splitlines()
+
 
 setup(
     name=NAME,

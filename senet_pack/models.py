@@ -139,6 +139,7 @@ class Bottleneck(nn.Module):
     """
     Base class for bottlenecks that implements `forward()` method.
     """
+
     def basic_forward(self, x):
         residual = x
         out = self.conv1(x)
@@ -158,12 +159,13 @@ class Bottleneck(nn.Module):
         out = self.se_module(out) + residual
         out = self.relu(out)
         return out
+
     def forward(self, x):
 
         if not self.training:
             out = self.basic_forward(x)
             return out
-        else : 
+        else:
             if not self.stochastic_depth:
                 out = self.basic_forward(x)
                 return out
@@ -174,6 +176,7 @@ class Bottleneck(nn.Module):
                 else:
                     out = self.basic_forward(x)
                     return out
+
 
 class SEBottleneck(Bottleneck):
     """
@@ -619,7 +622,7 @@ if __name__ == '__main__':
     import time
 
     model = se_resnext50_32x4d(pretrained=None, group_normalization=True,
-                                weight_standardization=False, stochastic_depth=False)
+                               weight_standardization=False, stochastic_depth=False)
     s = time.time()
     output = model.features(torch.randn(32, 3, 64, 128))
     e = time.time()
