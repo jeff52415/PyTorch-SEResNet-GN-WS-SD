@@ -17,6 +17,11 @@ jobs:
               export PATH=$PATH:$PWD
               pytest tests/
             name: Test
+        - run:
+            command: pytest --cov=./
+            name: Test Code Coverage
+
+
 
 workflows:
   # Name the workflow "test"
