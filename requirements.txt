@@ -12,3 +12,5 @@ setuptools>=41.4.0,<42.0.0
 # Model Building Requirements
 torch>=1.6.0
 torchvision>=0.7.0
+# coverage
+pytest-cov
