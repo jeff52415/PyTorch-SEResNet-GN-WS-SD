@@ -8,10 +8,14 @@ repos:
     -   id: check-yaml
     -   id: end-of-file-fixer
     -   id: trailing-whitespace
+        alias: Trim
 -   repo: https://github.com/psf/black
     rev: stable
     hooks:
     -   id: black
+        entry: pipenv run black .
+        verbose: True
+        name: black - code formatter
 -   repo: https://github.com/pycqa/isort
     rev: 5.8.0
     hooks:
