@@ -17,7 +17,7 @@ jobs:
               export PATH=$PATH:$PWD
               pytest tests/
             name: Test
-          
+
 workflows:
   # Name the workflow "test"
   test:

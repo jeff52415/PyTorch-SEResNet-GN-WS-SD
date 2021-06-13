@@ -1,12 +1,12 @@
 #!/usr/bin/env python
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
-NAME = 'PyTorch-SEResNet-GN-WS-SD'
-DESCRIPTION = 'PyTorch implementation of SE-ResNet with Group Normalization, Weight Standardization and Stochastic Depth'
-URL = 'https://github.com/jeff52415/PyTorch-SEResNet-GN-WS-SD'
+NAME = "PyTorch-SEResNet-GN-WS-SD"
+DESCRIPTION = "PyTorch implementation of SE-ResNet with Group Normalization, Weight Standardization and Stochastic Depth"
+URL = "https://github.com/jeff52415/PyTorch-SEResNet-GN-WS-SD"
 
 
-def list_reqs(fname='requirements.txt'):
+def list_reqs(fname="requirements.txt"):
     with open(fname) as fd:
         return fd.read().splitlines()
 
@@ -15,7 +15,7 @@ setup(
     name=NAME,
     description=DESCRIPTION,
     url=URL,
-    version='1.0.0',
+    version="1.0.0",
     include_package_data=True,
     packages=find_packages(),
     install_requires=list_reqs(),

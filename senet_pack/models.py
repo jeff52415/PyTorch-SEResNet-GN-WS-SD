@@ -1,13 +1,10 @@
-
-from __future__ import print_function, division, absolute_import
-from collections import OrderedDict
-from torch.utils import model_zoo
-
 import math
+from collections import OrderedDict
+
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch
-
+from torch.utils import model_zoo
 
 """
 ResNet code gently borrowed/modified from
@@ -15,112 +12,138 @@ https://github.com/pytorch/vision/blob/master/torchvision/models/resnet.py
 """
 
 
-__all__ = ['SENet', 'senet154', 'se_resnet50', 'se_resnet101', 'se_resnet152',
-           'se_resnext50_32x4d', 'se_resnext101_32x4d']
+__all__ = [
+    "SENet",
+    "senet154",
+    "se_resnet50",
+    "se_resnet101",
+    "se_resnet152",
+    "se_resnext50_32x4d",
+    "se_resnext101_32x4d",
+]
 
 pretrained_settings = {
-    'senet154': {
-        'imagenet': {
-            'url': 'http://data.lip6.fr/cadene/pretrainedmodels/senet154-c7b49a05.pth',
-            'input_space': 'RGB',
-            'input_size': [3, 224, 224],
-            'input_range': [0, 1],
-            'mean': [0.485, 0.456, 0.406],
-            'std': [0.229, 0.224, 0.225],
-            'num_classes': 1000
+    "senet154": {
+        "imagenet": {
+            "url": "http://data.lip6.fr/cadene/pretrainedmodels/senet154-c7b49a05.pth",
+            "input_space": "RGB",
+            "input_size": [3, 224, 224],
+            "input_range": [0, 1],
+            "mean": [0.485, 0.456, 0.406],
+            "std": [0.229, 0.224, 0.225],
+            "num_classes": 1000,
         }
     },
-    'se_resnet50': {
-        'imagenet': {
-            'url': 'http://data.lip6.fr/cadene/pretrainedmodels/se_resnet50-ce0d4300.pth',
-            'input_space': 'RGB',
-            'input_size': [3, 224, 224],
-            'input_range': [0, 1],
-            'mean': [0.485, 0.456, 0.406],
-            'std': [0.229, 0.224, 0.225],
-            'num_classes': 1000
+    "se_resnet50": {
+        "imagenet": {
+            "url": "http://data.lip6.fr/cadene/pretrainedmodels/se_resnet50-ce0d4300.pth",
+            "input_space": "RGB",
+            "input_size": [3, 224, 224],
+            "input_range": [0, 1],
+            "mean": [0.485, 0.456, 0.406],
+            "std": [0.229, 0.224, 0.225],
+            "num_classes": 1000,
         }
     },
-    'se_resnet101': {
-        'imagenet': {
-            'url': 'http://data.lip6.fr/cadene/pretrainedmodels/se_resnet101-7e38fcc6.pth',
-            'input_space': 'RGB',
-            'input_size': [3, 224, 224],
-            'input_range': [0, 1],
-            'mean': [0.485, 0.456, 0.406],
-            'std': [0.229, 0.224, 0.225],
-            'num_classes': 1000
+    "se_resnet101": {
+        "imagenet": {
+            "url": "http://data.lip6.fr/cadene/pretrainedmodels/se_resnet101-7e38fcc6.pth",
+            "input_space": "RGB",
+            "input_size": [3, 224, 224],
+            "input_range": [0, 1],
+            "mean": [0.485, 0.456, 0.406],
+            "std": [0.229, 0.224, 0.225],
+            "num_classes": 1000,
         }
     },
-    'se_resnet152': {
-        'imagenet': {
-            'url': 'http://data.lip6.fr/cadene/pretrainedmodels/se_resnet152-d17c99b7.pth',
-            'input_space': 'RGB',
-            'input_size': [3, 224, 224],
-            'input_range': [0, 1],
-            'mean': [0.485, 0.456, 0.406],
-            'std': [0.229, 0.224, 0.225],
-            'num_classes': 1000
+    "se_resnet152": {
+        "imagenet": {
+            "url": "http://data.lip6.fr/cadene/pretrainedmodels/se_resnet152-d17c99b7.pth",
+            "input_space": "RGB",
+            "input_size": [3, 224, 224],
+            "input_range": [0, 1],
+            "mean": [0.485, 0.456, 0.406],
+            "std": [0.229, 0.224, 0.225],
+            "num_classes": 1000,
         }
     },
-    'se_resnext50_32x4d': {
-        'imagenet': {
-            'url': 'http://data.lip6.fr/cadene/pretrainedmodels/se_resnext50_32x4d-a260b3a4.pth',
-            'input_space': 'RGB',
-            'input_size': [3, 224, 224],
-            'input_range': [0, 1],
-            'mean': [0.485, 0.456, 0.406],
-            'std': [0.229, 0.224, 0.225],
-            'num_classes': 1000
+    "se_resnext50_32x4d": {
+        "imagenet": {
+            "url": "http://data.lip6.fr/cadene/pretrainedmodels/se_resnext50_32x4d-a260b3a4.pth",
+            "input_space": "RGB",
+            "input_size": [3, 224, 224],
+            "input_range": [0, 1],
+            "mean": [0.485, 0.456, 0.406],
+            "std": [0.229, 0.224, 0.225],
+            "num_classes": 1000,
         }
     },
-    'se_resnext101_32x4d': {
-        'imagenet': {
-            'url': 'http://data.lip6.fr/cadene/pretrainedmodels/se_resnext101_32x4d-3b2fe3d8.pth',
-            'input_space': 'RGB',
-            'input_size': [3, 224, 224],
-            'input_range': [0, 1],
-            'mean': [0.485, 0.456, 0.406],
-            'std': [0.229, 0.224, 0.225],
-            'num_classes': 1000
+    "se_resnext101_32x4d": {
+        "imagenet": {
+            "url": "http://data.lip6.fr/cadene/pretrainedmodels/se_resnext101_32x4d-3b2fe3d8.pth",
+            "input_space": "RGB",
+            "input_size": [3, 224, 224],
+            "input_range": [0, 1],
+            "mean": [0.485, 0.456, 0.406],
+            "std": [0.229, 0.224, 0.225],
+            "num_classes": 1000,
         }
     },
 }
 
 
 class WSConv2d(nn.Conv2d):
-
-    def __init__(self, in_channels, out_channels, kernel_size, stride=1,
-                 padding=0, dilation=1, groups=1, bias=True):
-        super(WSConv2d, self).__init__(in_channels, out_channels, kernel_size, stride,
-                                       padding, dilation, groups, bias)
+    def __init__(
+        self,
+        in_channels,
+        out_channels,
+        kernel_size,
+        stride=1,
+        padding=0,
+        dilation=1,
+        groups=1,
+        bias=True,
+    ):
+        super().__init__(
+            in_channels,
+            out_channels,
+            kernel_size,
+            stride,
+            padding,
+            dilation,
+            groups,
+            bias,
+        )
 
     def forward(self, x):
         weight = self.weight
-        weight_mean = weight.mean(dim=1, keepdim=True).mean(dim=2,
-                                                            keepdim=True).mean(dim=3, keepdim=True)
+        weight_mean = (
+            weight.mean(dim=1, keepdim=True)
+            .mean(dim=2, keepdim=True)
+            .mean(dim=3, keepdim=True)
+        )
         weight = weight - weight_mean
-        std = weight.view(weight.size(
-            0), -1).std(dim=1).view(-1, 1, 1, 1) + 1e-5
+        std = weight.view(weight.size(0), -1).std(dim=1).view(-1, 1, 1, 1) + 1e-5
         weight = weight / std.expand_as(weight)
-        return F.conv2d(x, weight, self.bias, self.stride,
-                        self.padding, self.dilation, self.groups)
+        return F.conv2d(
+            x, weight, self.bias, self.stride, self.padding, self.dilation, self.groups
+        )
 
 
 class SEModule(nn.Module):
-
     def __init__(self, channels, reduction, weight_standardization=False):
-        super(SEModule, self).__init__()
+        super().__init__()
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
-        self.fc1 = nn.Conv2d(channels, channels // reduction, kernel_size=1,
-                             padding=0)
+        self.fc1 = nn.Conv2d(channels, channels // reduction, kernel_size=1, padding=0)
 
         if weight_standardization:
-            self.fc2 = WSConv2d(channels // reduction, channels, kernel_size=1,
-                                padding=0)
+            self.fc2 = WSConv2d(
+                channels // reduction, channels, kernel_size=1, padding=0
+            )
         else:
-            self.fc2 = nn.Conv2d(channels // reduction, channels, kernel_size=1,
-                                 padding=0)
+            self.fc2 = nn.Conv2d(
+                channels // reduction, channels, kernel_size=1, padding=0
+            )
 
         self.relu = nn.LeakyReLU(inplace=True)
         self.sigmoid = nn.Sigmoid()
@@ -182,28 +205,49 @@ class SEBottleneck(Bottleneck):
     """
     Bottleneck for SENet154.
     """
+
     expansion = 4
 
-    def __init__(self, inplanes, planes, groups, reduction, stride=1,
-                 downsample=None, group_normalization=False, weight_standardization=False, stochastic_depth=False, probability=0.8):
-        super(SEBottleneck, self).__init__()
+    def __init__(
+        self,
+        inplanes,
+        planes,
+        groups,
+        reduction,
+        stride=1,
+        downsample=None,
+        group_normalization=False,
+        weight_standardization=False,
+        stochastic_depth=False,
+        probability=0.8,
+    ):
+        super().__init__()
         self.stochastic_depth = stochastic_depth
         self.probability = probability
-        self.conv1 = nn.Conv2d(inplanes, planes * 2,
-                               kernel_size=1, bias=False)
+        self.conv1 = nn.Conv2d(inplanes, planes * 2, kernel_size=1, bias=False)
         if weight_standardization:
-            self.conv2 = WSConv2d(planes * 2, planes * 4, kernel_size=3,
-                                  stride=stride, padding=1, groups=groups,
-                                  bias=False)
-            self.conv3 = WSConv2d(planes * 4, planes * 4, kernel_size=1,
-                                  bias=False)
+            self.conv2 = WSConv2d(
+                planes * 2,
+                planes * 4,
+                kernel_size=3,
+                stride=stride,
+                padding=1,
+                groups=groups,
+                bias=False,
+            )
+            self.conv3 = WSConv2d(planes * 4, planes * 4, kernel_size=1, bias=False)
         else:
 
-            self.conv2 = nn.Conv2d(planes * 2, planes * 4, kernel_size=3,
-                                   stride=stride, padding=1, groups=groups,
-                                   bias=False)
-            self.conv3 = nn.Conv2d(planes * 4, planes * 4, kernel_size=1,
-                                   bias=False)
+            self.conv2 = nn.Conv2d(
+                planes * 2,
+                planes * 4,
+                kernel_size=3,
+                stride=stride,
+                padding=1,
+                groups=groups,
+                bias=False,
+            )
+            self.conv3 = nn.Conv2d(planes * 4, planes * 4, kernel_size=1, bias=False)
 
         if group_normalization:
             planes_input_shallow = planes * 2
@@ -219,7 +263,10 @@ class SEBottleneck(Bottleneck):
 
         self.relu = nn.LeakyReLU(inplace=True)
         self.se_module = SEModule(
-            planes * 4, reduction=reduction, weight_standardization=weight_standardization)
+            planes * 4,
+            reduction=reduction,
+            weight_standardization=weight_standardization,
+        )
         self.downsample = downsample
         self.stride = stride
 
@@ -230,27 +277,40 @@ class SEResNetBottleneck(Bottleneck):
     implementation and uses `stride=stride` in `conv1` and not in `conv2`
     (the latter is used in the torchvision implementation of ResNet).
     """
+
     expansion = 4
 
-    def __init__(self, inplanes, planes, groups, reduction, stride=1,
-                 downsample=None, group_normalization=False, weight_standardization=False, stochastic_depth=False, probability=0.8):
-        super(SEResNetBottleneck, self).__init__()
+    def __init__(
+        self,
+        inplanes,
+        planes,
+        groups,
+        reduction,
+        stride=1,
+        downsample=None,
+        group_normalization=False,
+        weight_standardization=False,
+        stochastic_depth=False,
+        probability=0.8,
+    ):
+        super().__init__()
         self.stochastic_depth = stochastic_depth
         self.probability = probability
-        self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, bias=False,
-                               stride=stride)
+        self.conv1 = nn.Conv2d(
+            inplanes, planes, kernel_size=1, bias=False, stride=stride
+        )
         if weight_standardization:
 
-            self.conv2 = WSConv2d(planes, planes, kernel_size=3, padding=1,
-                                  groups=groups, bias=False)
-            self.conv3 = WSConv2d(planes, planes * 4,
-                                  kernel_size=1, bias=False)
+            self.conv2 = WSConv2d(
+                planes, planes, kernel_size=3, padding=1, groups=groups, bias=False
+            )
+            self.conv3 = WSConv2d(planes, planes * 4, kernel_size=1, bias=False)
         else:
 
-            self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, padding=1,
-                                   groups=groups, bias=False)
-            self.conv3 = nn.Conv2d(
-                planes, planes * 4, kernel_size=1, bias=False)
+            self.conv2 = nn.Conv2d(
+                planes, planes, kernel_size=3, padding=1, groups=groups, bias=False
+            )
+            self.conv3 = nn.Conv2d(planes, planes * 4, kernel_size=1, bias=False)
 
         if group_normalization:
             self.b1 = nn.GroupNorm(32, planes)
@@ -265,7 +325,10 @@ class SEResNetBottleneck(Bottleneck):
 
         self.relu = nn.LeakyReLU(inplace=True)
         self.se_module = SEModule(
-            planes * 4, reduction=reduction, weight_standardization=weight_standardization)
+            planes * 4,
+            reduction=reduction,
+            weight_standardization=weight_standardization,
+        )
         self.downsample = downsample
         self.stride = stride
 
@@ -274,27 +337,52 @@ class SEResNeXtBottleneck(Bottleneck):
     """
     ResNeXt bottleneck type C with a Squeeze-and-Excitation module.
     """
+
     expansion = 4
 
-    def __init__(self, inplanes, planes, groups, reduction, stride=1,
-                 downsample=None, base_width=4, group_normalization=False, weight_standardization=False, stochastic_depth=False, probability=0.8):
-        super(SEResNeXtBottleneck, self).__init__()
+    def __init__(
+        self,
+        inplanes,
+        planes,
+        groups,
+        reduction,
+        stride=1,
+        downsample=None,
+        base_width=4,
+        group_normalization=False,
+        weight_standardization=False,
+        stochastic_depth=False,
+        probability=0.8,
+    ):
+        super().__init__()
         width = math.floor(planes * (base_width / 64)) * groups
         self.stochastic_depth = stochastic_depth
         self.probability = probability
-        self.conv1 = nn.Conv2d(inplanes, width, kernel_size=1, bias=False,
-                               stride=1)
+        self.conv1 = nn.Conv2d(inplanes, width, kernel_size=1, bias=False, stride=1)
         if weight_standardization:
 
-            self.conv2 = WSConv2d(width, width, kernel_size=3, stride=stride,
-                                  padding=1, groups=groups, bias=False)
+            self.conv2 = WSConv2d(
+                width,
+                width,
+                kernel_size=3,
+                stride=stride,
+                padding=1,
+                groups=groups,
+                bias=False,
+            )
             self.conv3 = WSConv2d(width, planes * 4, kernel_size=1, bias=False)
         else:
 
-            self.conv2 = nn.Conv2d(width, width, kernel_size=3, stride=stride,
-                                   padding=1, groups=groups, bias=False)
-            self.conv3 = nn.Conv2d(
-                width, planes * 4, kernel_size=1, bias=False)
+            self.conv2 = nn.Conv2d(
+                width,
+                width,
+                kernel_size=3,
+                stride=stride,
+                padding=1,
+                groups=groups,
+                bias=False,
+            )
+            self.conv3 = nn.Conv2d(width, planes * 4, kernel_size=1, bias=False)
 
         if group_normalization:
             self.bn1 = nn.GroupNorm(32, width)
@@ -308,17 +396,31 @@ class SEResNeXtBottleneck(Bottleneck):
             self.bn3 = nn.BatchNorm2d(planes * 4)
         self.relu = nn.LeakyReLU(inplace=True)
         self.se_module = SEModule(
-            planes * 4, reduction=reduction, weight_standardization=weight_standardization)
+            planes * 4,
+            reduction=reduction,
+            weight_standardization=weight_standardization,
+        )
         self.downsample = downsample
         self.stride = stride
 
 
 class SENet(nn.Module):
-
-    def __init__(self, block, layers, groups, reduction, dropout_p=0.2,
-                 inplanes=128, input_3x3=True, downsample_kernel_size=3,
-                 downsample_padding=1, num_classes=1000, group_normalization=False,
-                 weight_standardization=False, stochastic_depth=False):
+    def __init__(
+        self,
+        block,
+        layers,
+        groups,
+        reduction,
+        dropout_p=0.2,
+        inplanes=128,
+        input_3x3=True,
+        downsample_kernel_size=3,
+        downsample_padding=1,
+        num_classes=1000,
+        group_normalization=False,
+        weight_standardization=False,
+        stochastic_depth=False,
+    ):
         """
         Parameters
         ----------
@@ -362,7 +464,7 @@ class SENet(nn.Module):
         num_classes (int): Number of outputs in `last_linear` layer.
             - For all models: 1000
         """
-        super(SENet, self).__init__()
+        super().__init__()
         self.inplanes = inplanes
 
         layer_count = 0
@@ -372,59 +474,66 @@ class SENet(nn.Module):
         self.probabilities = []
         n = 0
         for layer in layers:
-            self.probabilities.append(get_probability[n: (n + int(layer))])
+            self.probabilities.append(get_probability[n : (n + int(layer))])
             n += int(layer)
 
         if input_3x3:
             if group_normalization:
                 layer0_modules = [
-                    ('conv1', nn.Conv2d(3, 64, 3, stride=2, padding=1,
-                                        bias=False)),
-                    ('bn1', nn.GroupNorm(32, 64)),
-                    ('relu1', nn.LeakyReLU(inplace=True)),
-                    ('conv2', nn.Conv2d(64, 64, 3, stride=1, padding=1,
-                                        bias=False)),
-                    ('bn2', nn.GroupNorm(32, 64)),
-                    ('relu2', nn.LeakyReLU(inplace=True)),
-                    ('conv3', nn.Conv2d(64, inplanes, 3, stride=1, padding=1,
-                                        bias=False)),
-                    ('bn3', nn.GroupNorm(32, inplanes)),
-                    ('relu3', nn.LeakyReLU(inplace=True)),
+                    ("conv1", nn.Conv2d(3, 64, 3, stride=2, padding=1, bias=False)),
+                    ("bn1", nn.GroupNorm(32, 64)),
+                    ("relu1", nn.LeakyReLU(inplace=True)),
+                    ("conv2", nn.Conv2d(64, 64, 3, stride=1, padding=1, bias=False)),
+                    ("bn2", nn.GroupNorm(32, 64)),
+                    ("relu2", nn.LeakyReLU(inplace=True)),
+                    (
+                        "conv3",
+                        nn.Conv2d(64, inplanes, 3, stride=1, padding=1, bias=False),
+                    ),
+                    ("bn3", nn.GroupNorm(32, inplanes)),
+                    ("relu3", nn.LeakyReLU(inplace=True)),
                 ]
             else:
                 layer0_modules = [
-                    ('conv1', nn.Conv2d(3, 64, 3, stride=2, padding=1,
-                                        bias=False)),
-                    ('bn1', nn.BatchNorm2d(64)),
-                    ('relu1', nn.LeakyReLU(inplace=True)),
-                    ('conv2', nn.Conv2d(64, 64, 3, stride=1, padding=1,
-                                        bias=False)),
-                    ('bn2', nn.BatchNorm2d(64)),
-                    ('relu2', nn.LeakyReLU(inplace=True)),
-                    ('conv3', nn.Conv2d(64, inplanes, 3, stride=1, padding=1,
-                                        bias=False)),
-                    ('bn3', nn.BatchNorm2d(inplanes)),
-                    ('relu3', nn.LeakyReLU(inplace=True)),
+                    ("conv1", nn.Conv2d(3, 64, 3, stride=2, padding=1, bias=False)),
+                    ("bn1", nn.BatchNorm2d(64)),
+                    ("relu1", nn.LeakyReLU(inplace=True)),
+                    ("conv2", nn.Conv2d(64, 64, 3, stride=1, padding=1, bias=False)),
+                    ("bn2", nn.BatchNorm2d(64)),
+                    ("relu2", nn.LeakyReLU(inplace=True)),
+                    (
+                        "conv3",
+                        nn.Conv2d(64, inplanes, 3, stride=1, padding=1, bias=False),
+                    ),
+                    ("bn3", nn.BatchNorm2d(inplanes)),
+                    ("relu3", nn.LeakyReLU(inplace=True)),
                 ]
         else:
             if group_normalization:
                 layer0_modules = [
-                    ('conv1', nn.Conv2d(3, inplanes, kernel_size=7, stride=2,
-                                        padding=3, bias=False)),
-                    ('bn1', nn.GroupNorm(32, inplanes)),
-                    ('relu1', nn.LeakyReLU(inplace=True)),
+                    (
+                        "conv1",
+                        nn.Conv2d(
+                            3, inplanes, kernel_size=7, stride=2, padding=3, bias=False
+                        ),
+                    ),
+                    ("bn1", nn.GroupNorm(32, inplanes)),
+                    ("relu1", nn.LeakyReLU(inplace=True)),
                 ]
             else:
                 layer0_modules = [
-                    ('conv1', nn.Conv2d(3, inplanes, kernel_size=7, stride=2,
-                                        padding=3, bias=False)),
-                    ('bn1', nn.BatchNorm2d(inplanes)),
-                    ('relu1', nn.LeakyReLU(inplace=True)),
+                    (
+                        "conv1",
+                        nn.Conv2d(
+                            3, inplanes, kernel_size=7, stride=2, padding=3, bias=False
+                        ),
+                    ),
+                    ("bn1", nn.BatchNorm2d(inplanes)),
+                    ("relu1", nn.LeakyReLU(inplace=True)),
                 ]
         # To preserve compatibility with Caffe weights `ceil_mode=True`
         # is used instead of `padding=1`.
-        layer0_modules.append(('pool', nn.MaxPool2d(3, stride=2,
-                                                    ceil_mode=True)))
+        layer0_modules.append(("pool", nn.MaxPool2d(3, stride=2, ceil_mode=True)))
         self.layer0 = nn.Sequential(OrderedDict(layer0_modules))
         self.layer1 = self._make_layer(
             block,
@@ -453,8 +562,6 @@ class SENet(nn.Module):
             weight_standardization=weight_standardization,
             stochastic_depth=stochastic_depth,
             probability_list=self.probabilities[1],
-
-
         )
         self.layer3 = self._make_layer(
             block,
@@ -488,33 +595,77 @@ class SENet(nn.Module):
         self.dropout = nn.Dropout(dropout_p) if dropout_p is not None else None
         self.last_linear = nn.Linear(512 * block.expansion, num_classes)
 
-    def _make_layer(self, block, planes, blocks, groups, reduction, stride=1,
-                    downsample_kernel_size=1, downsample_padding=0, group_normalization=False, weight_standardization=False, stochastic_depth=False, probability_list=[]):
+    def _make_layer(
+        self,
+        block,
+        planes,
+        blocks,
+        groups,
+        reduction,
+        stride=1,
+        downsample_kernel_size=1,
+        downsample_padding=0,
+        group_normalization=False,
+        weight_standardization=False,
+        stochastic_depth=False,
+        probability_list=[],
+    ):
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
             if group_normalization:
                 downsample = nn.Sequential(
-                    nn.Conv2d(self.inplanes, planes * block.expansion,
-                              kernel_size=downsample_kernel_size, stride=stride,
-                              padding=downsample_padding, bias=False),
+                    nn.Conv2d(
+                        self.inplanes,
+                        planes * block.expansion,
+                        kernel_size=downsample_kernel_size,
+                        stride=stride,
+                        padding=downsample_padding,
+                        bias=False,
+                    ),
                     nn.GroupNorm(32, planes * block.expansion),
                 )
             else:
 
                 downsample = nn.Sequential(
-                    nn.Conv2d(self.inplanes, planes * block.expansion,
-                              kernel_size=downsample_kernel_size, stride=stride,
-                              padding=downsample_padding, bias=False),
+                    nn.Conv2d(
+                        self.inplanes,
+                        planes * block.expansion,
+                        kernel_size=downsample_kernel_size,
+                        stride=stride,
+                        padding=downsample_padding,
+                        bias=False,
+                    ),
                     nn.GroupNorm(32, planes * block.expansion),
                 )
 
         layers = []
-        layers.append(block(self.inplanes, planes, groups, reduction, stride,
-                            downsample, group_normalization=group_normalization, weight_standardization=weight_standardization, stochastic_depth=False))
+        layers.append(
+            block(
+                self.inplanes,
+                planes,
+                groups,
+                reduction,
+                stride,
+                downsample,
+                group_normalization=group_normalization,
+                weight_standardization=weight_standardization,
+                stochastic_depth=False,
+            )
+        )
         self.inplanes = planes * block.expansion
         for i, probability in zip(range(1, blocks), probability_list):
-            layers.append(block(self.inplanes, planes, groups, reduction, group_normalization=group_normalization,
-                                weight_standardization=weight_standardization, stochastic_depth=stochastic_depth, probability=probability))
+            layers.append(
+                block(
+                    self.inplanes,
+                    planes,
+                    groups,
+                    reduction,
+                    group_normalization=group_normalization,
+                    weight_standardization=weight_standardization,
+                    stochastic_depth=stochastic_depth,
+                    probability=probability,
+                )
+            )
 
         return nn.Sequential(*layers)
 
@@ -541,90 +692,178 @@ class SENet(nn.Module):
 
 
 def initialize_pretrained_model(model, num_classes, settings):
-    assert num_classes == settings['num_classes'], \
-        'num_classes should be {}, but is {}'.format(
-            settings['num_classes'], num_classes)
-    model.load_state_dict(model_zoo.load_url(settings['url']))
-    model.input_space = settings['input_space']
-    model.input_size = settings['input_size']
-    model.input_range = settings['input_range']
-    model.mean = settings['mean']
-    model.std = settings['std']
+    assert (
+        num_classes == settings["num_classes"]
+    ), "num_classes should be {}, but is {}".format(
+        settings["num_classes"], num_classes
+    )
+    model.load_state_dict(model_zoo.load_url(settings["url"]))
+    model.input_space = settings["input_space"]
+    model.input_size = settings["input_size"]
+    model.input_range = settings["input_range"]
+    model.mean = settings["mean"]
+    model.std = settings["std"]
 
 
-def senet154(num_classes=1000, pretrained='imagenet', group_normalization=False, weight_standardization=False, stochastic_depth=False):
-    model = SENet(SEBottleneck, [3, 8, 36, 3], groups=64, reduction=16,
-                  dropout_p=0.2, num_classes=num_classes, group_normalization=group_normalization, weight_standardization=weight_standardization, stochastic_depth=stochastic_depth)
+def senet154(
+    num_classes=1000,
+    pretrained="imagenet",
+    group_normalization=False,
+    weight_standardization=False,
+    stochastic_depth=False,
+):
+    model = SENet(
+        SEBottleneck,
+        [3, 8, 36, 3],
+        groups=64,
+        reduction=16,
+        dropout_p=0.2,
+        num_classes=num_classes,
+        group_normalization=group_normalization,
+        weight_standardization=weight_standardization,
+        stochastic_depth=stochastic_depth,
+    )
     if pretrained is not None:
-        settings = pretrained_settings['senet154'][pretrained]
+        settings = pretrained_settings["senet154"][pretrained]
         initialize_pretrained_model(model, num_classes, settings)
     return model
 
 
-def se_resnet50(num_classes=1000, pretrained='imagenet', group_normalization=False, weight_standardization=False, stochastic_depth=False):
-    model = SENet(SEResNetBottleneck, [3, 4, 6, 3], groups=1, reduction=16,
-                  dropout_p=None, inplanes=64, input_3x3=False,
-                  downsample_kernel_size=1, downsample_padding=0,
-                  num_classes=num_classes, group_normalization=group_normalization, weight_standardization=weight_standardization, stochastic_depth=stochastic_depth)
+def se_resnet50(
+    num_classes=1000,
+    pretrained="imagenet",
+    group_normalization=False,
+    weight_standardization=False,
+    stochastic_depth=False,
+):
+    model = SENet(
+        SEResNetBottleneck,
+        [3, 4, 6, 3],
+        groups=1,
+        reduction=16,
+        dropout_p=None,
+        inplanes=64,
+        input_3x3=False,
+        downsample_kernel_size=1,
+        downsample_padding=0,
+        num_classes=num_classes,
+        group_normalization=group_normalization,
+        weight_standardization=weight_standardization,
+        stochastic_depth=stochastic_depth,
+    )
     if pretrained is not None:
-        settings = pretrained_settings['se_resnet50'][pretrained]
+        settings = pretrained_settings["se_resnet50"][pretrained]
         initialize_pretrained_model(model, num_classes, settings)
     return model
 
 
-def se_resnet101(num_classes=1000, pretrained='imagenet', group_normalization=False, weight_standardization=False, stochastic_depth=False):
-    model = SENet(SEResNetBottleneck, [3, 4, 23, 3], groups=1, reduction=16,
-                  dropout_p=None, inplanes=64, input_3x3=False,
-                  downsample_kernel_size=1, downsample_padding=0,
-                  num_classes=num_classes, group_normalization=group_normalization, weight_standardization=weight_standardization, stochastic_depth=stochastic_depth)
+def se_resnet101(
+    num_classes=1000,
+    pretrained="imagenet",
+    group_normalization=False,
+    weight_standardization=False,
+    stochastic_depth=False,
+):
+    model = SENet(
+        SEResNetBottleneck,
+        [3, 4, 23, 3],
+        groups=1,
+        reduction=16,
+        dropout_p=None,
+        inplanes=64,
+        input_3x3=False,
+        downsample_kernel_size=1,
+        downsample_padding=0,
+        num_classes=num_classes,
+        group_normalization=group_normalization,
+        weight_standardization=weight_standardization,
+        stochastic_depth=stochastic_depth,
+    )
     if pretrained is not None:
-        settings = pretrained_settings['se_resnet101'][pretrained]
+        settings = pretrained_settings["se_resnet101"][pretrained]
         initialize_pretrained_model(model, num_classes, settings)
     return model
 
 
-def se_resnet152(num_classes=1000, pretrained='imagenet', group_normalization=False, weight_standardization=False, stochastic_depth=False):
-    model = SENet(SEResNetBottleneck, [3, 8, 36, 3], groups=1, reduction=16,
-                  dropout_p=None, inplanes=64, input_3x3=False,
-                  downsample_kernel_size=1, downsample_padding=0,
-                  num_classes=num_classes, group_normalization=group_normalization, weight_standardization=weight_standardization, stochastic_depth=stochastic_depth)
+def se_resnet152(
+    num_classes=1000,
+    pretrained="imagenet",
+    group_normalization=False,
+    weight_standardization=False,
+    stochastic_depth=False,
+):
+    model = SENet(
+        SEResNetBottleneck,
+        [3, 8, 36, 3],
+        groups=1,
+        reduction=16,
+        dropout_p=None,
+        inplanes=64,
+        input_3x3=False,
+        downsample_kernel_size=1,
+        downsample_padding=0,
+        num_classes=num_classes,
+        group_normalization=group_normalization,
+        weight_standardization=weight_standardization,
+        stochastic_depth=stochastic_depth,
+    )
     if pretrained is not None:
-        settings = pretrained_settings['se_resnet152'][pretrained]
+        settings = pretrained_settings["se_resnet152"][pretrained]
         initialize_pretrained_model(model, num_classes, settings)
     return model
 
 
-def se_resnext50_32x4d(num_classes=1000, pretrained='imagenet', group_normalization=False, weight_standardization=False, stochastic_depth=False):
-    model = SENet(SEResNeXtBottleneck, [3, 4, 6, 3], groups=32, reduction=16,
-                  dropout_p=None, inplanes=64, input_3x3=False,
-                  downsample_kernel_size=1, downsample_padding=0,
-                  num_classes=num_classes, group_normalization=group_normalization, weight_standardization=weight_standardization, stochastic_depth=stochastic_depth)
+def se_resnext50_32x4d(
+    num_classes=1000,
+    pretrained="imagenet",
+    group_normalization=False,
+    weight_standardization=False,
+    stochastic_depth=False,
+):
+    model = SENet(
+        SEResNeXtBottleneck,
+        [3, 4, 6, 3],
+        groups=32,
+        reduction=16,
+        dropout_p=None,
+        inplanes=64,
+        input_3x3=False,
+        downsample_kernel_size=1,
+        downsample_padding=0,
+        num_classes=num_classes,
+        group_normalization=group_normalization,
+        weight_standardization=weight_standardization,
+        stochastic_depth=stochastic_depth,
+    )
     if pretrained is not None:
-        settings = pretrained_settings['se_resnext50_32x4d'][pretrained]
+        settings = pretrained_settings["se_resnext50_32x4d"][pretrained]
         initialize_pretrained_model(model, num_classes, settings)
     return model
 
 
-def se_resnext101_32x4d(num_classes=1000, pretrained='imagenet', group_normalization=False, weight_standardization=False, stochastic_depth=False):
-    model = SENet(SEResNeXtBottleneck, [3, 4, 23, 3], groups=32, reduction=16,
-                  dropout_p=None, inplanes=64, input_3x3=False,
-                  downsample_kernel_size=1, downsample_padding=0,
-                  num_classes=num_classes, group_normalization=group_normalization, weight_standardization=weight_standardization, stochastic_depth=stochastic_depth)
+def se_resnext101_32x4d(
+    num_classes=1000,
+    pretrained="imagenet",
+    group_normalization=False,
+    weight_standardization=False,
+    stochastic_depth=False,
+):
+    model = SENet(
+        SEResNeXtBottleneck,
+        [3, 4, 23, 3],
+        groups=32,
+        reduction=16,
+        dropout_p=None,
+        inplanes=64,
+        input_3x3=False,
+        downsample_kernel_size=1,
+        downsample_padding=0,
+        num_classes=num_classes,
+        group_normalization=group_normalization,
+        weight_standardization=weight_standardization,
+        stochastic_depth=stochastic_depth,
+    )
     if pretrained is not None:
-        settings = pretrained_settings['se_resnext101_32x4d'][pretrained]
+        settings = pretrained_settings["se_resnext101_32x4d"][pretrained]
         initialize_pretrained_model(model, num_classes, settings)
     return model
-
-
-if __name__ == '__main__':
-    from senet_pack.models import se_resnext50_32x4d, se_resnext101_32x4d
-    import torch
-    import time
-
-    model = se_resnext50_32x4d(pretrained=None, group_normalization=True,
-                               weight_standardization=False, stochastic_depth=False)
-    s = time.time()
-    output = model.features(torch.randn(32, 3, 64, 128))
-    e = time.time()
-    print('inference time : {:.4f}/s'.format(e-s))
-    # torchsummary.summary(model, torch.randn(1, 3, 64, 64))model.layer1
