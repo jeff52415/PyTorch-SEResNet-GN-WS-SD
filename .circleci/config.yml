@@ -10,11 +10,12 @@ jobs:
       steps:
         - checkout
         - run:
-            command: pip install -e .
+            command: |
+              pip install -e .
+              pip install --user codecov && codecov -t $CODECOV_TOKEN
             name: Install Deps
         - run:
             command: |
-              codecov -t $CODECOV_TOKEN
               pytest --cov=./ tests/
               $HOME/.local/bin/coverage html
             name: Test Code Coverage
