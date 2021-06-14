@@ -18,8 +18,13 @@ jobs:
               pytest tests/
             name: Test
         - run:
-            command: pytest --cov=./
+            command: |
+              coverage run -m pytest
+              coverage report
+              coverage html  # open htmlcov/index.html in a browser
             name: Test Code Coverage
+        - store_artifacts:
+            path: htmlcov
 
 
 
