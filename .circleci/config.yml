@@ -18,7 +18,6 @@ jobs:
             command: |
               pytest --cov=./ tests/
               $HOME/.local/bin/coverage html
-              find htmlcov -type f -not -name "*.html" -exec rm -r -f {} +
             name: Test Code Coverage
         - store_artifacts:
             path: htmlcov
