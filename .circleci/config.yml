@@ -14,13 +14,8 @@ jobs:
             name: Install Deps
         - run:
             command: |
-              export PATH=$PATH:$PWD
-              pytest tests/
-            name: Test
-        - run:
-            command: |
-              $HOME/.local/bin/coverage run -m pytest
-              $HOME/.local/bin/coverage report
+              codecov -t $CODECOV_TOKEN
+              pytest --cov=./ tests/
               $HOME/.local/bin/coverage html
             name: Test Code Coverage
         - store_artifacts:
