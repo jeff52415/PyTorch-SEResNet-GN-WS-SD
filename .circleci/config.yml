@@ -19,9 +19,9 @@ jobs:
             name: Test
         - run:
             command: |
-              coverage run -m pytest
-              coverage report
-              coverage html  # open htmlcov/index.html in a browser
+              $HOME/.local/bin/coverage run -m pytest
+              $HOME/.local/bin/coverage report
+              $HOME/.local/bin/coverage html
             name: Test Code Coverage
         - store_artifacts:
             path: htmlcov
